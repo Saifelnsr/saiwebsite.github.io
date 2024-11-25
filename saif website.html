@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThingSpeak Data Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #003366;
+            color: #ffffff;
+            padding: 20px 10px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        h2 {
+            color: #003366;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 5px;
+        }
+
+        #data-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            background-color: #ffffff;
+            overflow-x: auto;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        footer {
+            background-color: #003366;
+            color: #ffffff;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ThingSpeak Data Visualization</h1>
+    </header>
+    <main>
+        <section id="data-section">
+            <h2>Real-Time Data</h2>
+            <div id="data-container"></div>
+        </section>
+        <section id="graph-section">
+            <h2>Graph Visualization</h2>
+            <canvas id="data-chart"></canvas>
+        </section>
+    </main>
+    <footer>
+        <p>Powered by ThingSpeak | Dynamic Scientific Design</p>
+    </footer>
+    <script>
+        const apiKey = "AU6532ZNQFC1LXHT"; // Read API Key
+        const channelId = "2709384"; // Channel ID
+
+        async function fetchThingSpeakData() {
+            try {
+                const response = await fetch(`https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}`);
+                const data = await response.json();
+
+                if (data && data.feeds) {
+                    updateDataContainer(data.feeds);
+                    createGraph(data.feeds);
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        function updateDataContainer(feeds) {
+            const container = document.getElementById("data-container");
+            container.innerHTML = ""; // Clear old data
+
+            feeds.forEach(feed => {
+                const dataRow = document.createElement("div");
+                dataRow.textContent = `Entry ID: ${feed.entry_id} | Field 1: ${feed.field1} | Created at: ${feed.created_at}`;
+                dataRow.style.margin = "5px 0";
+                container.appendChild(dataRow);
+            });
+        }
+
+        function createGraph(feeds) {
+            const labels = feeds.map(feed => new Date(feed.created_at).toLocaleString());
+            const data = feeds.map(feed => parseFloat(feed.field1));
+
+            const ctx = document.getElementById("data-chart").getContext("2d");
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Field 1 Data",
+                        data: data,
+                        borderColor: "#003366",
+                        backgroundColor: "rgba(0, 51, 102, 0.2)",
+                        borderWidth: 1,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Time"
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "Value"
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fetch data every 15 seconds
+        fetchThingSpeakData();
+        setInterval(fetchThingSpeakData, 15000);
+    </script>
+</body>
+</html>
